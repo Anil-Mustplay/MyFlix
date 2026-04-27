@@ -18,7 +18,7 @@ const movies = {
     { id: 12, title: "The Batman", year: 2022, genre: "Action", desc: "When the Riddler targets Gotham's elite, Batman ventures into the city's underworld to uncover corruption.", img: "https://image.tmdb.org/t/p/w500/74xTEgt7R36Fpooo50r9T25onhq.jpg", trailer: "mqqft2x_Aa4" },
   ],
   comedy: [
-    { id: 13, title: "The Grand Budapest Hotel", year: 2014, genre: "Comedy", desc: "The adventures of Gustave H, a legendary concierge, and Zero, his lobby boy, involving the theft of a painting.", img: "https://image.tmdb.org/t/p/w500/eWdyYQreja6JrobOf2XFmalanden.jpg", trailer: "1Fg0RDlHBNQ" },
+    { id: 13, title: "The Grand Budapest Hotel", year: 2014, genre: "Comedy", desc: "The adventures of Gustave H, a legendary concierge, and Zero, his lobby boy, involving the theft of a painting.", img: "https://image.tmdb.org/t/p/w500/eWdyYQreja6JrobOf2XFmalanden.jpg", trailer: "qGqiHJTsRkQ" },
     { id: 14, title: "Knives Out", year: 2019, genre: "Mystery", desc: "A detective investigates the death of a patriarch of an eccentric, combative family.", img: "https://image.tmdb.org/t/p/w1280/t47INT1sSNiJwJHJqxxQ7Vt3DE9.jpg", trailer: "qGqiHJTsRkQ" },
     { id: 15, title: "Barbie", year: 2023, genre: "Comedy", desc: "Barbie and Ken leave their perfect utopia and venture into the real world, discovering human nature.", img: "https://image.tmdb.org/t/p/w500/iuFNMS8vlzmfa8TxfjbLQDKPEdM.jpg", trailer: "pBk4NYhWNMM" },
     { id: 16, title: "The Menu", year: 2022, genre: "Dark Comedy", desc: "A young couple travels to an exclusive island restaurant where the chef has prepared a unique menu with shocking surprises.", img: "https://image.tmdb.org/t/p/w1280/fPtUgMcLIboqlTlPrq0bQpKK8eq.jpg", trailer: "uh7XP3HWqcE" },
