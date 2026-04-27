@@ -1,0 +1,354 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,600;1,300&display=swap');
+
+:root {
+  --bg: #090909;
+  --surface: #111111;
+  --card: #161616;
+  --border: #242424;
+  --accent: #e50914;
+  --accent-glow: rgba(229, 9, 20, 0.35);
+  --text: #f0f0f0;
+  --muted: #888;
+  --card-w: 200px;
+  --card-h: 300px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  overflow-x: hidden;
+  cursor: default;
+}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+
+/* ── HEADER ── */
+.header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  padding: 20px 48px;
+  background: linear-gradient(to bottom, rgba(9,9,9,0.95) 0%, transparent 100%);
+  backdrop-filter: blur(0px);
+  transition: background 0.3s, backdrop-filter 0.3s;
+}
+
+.header.scrolled {
+  background: rgba(9,9,9,0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+
+.header h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 2.4rem;
+  letter-spacing: 3px;
+  color: var(--accent);
+  text-shadow: 0 0 30px var(--accent-glow);
+  user-select: none;
+}
+
+/* ── BANNER ── */
+.banner {
+  position: relative;
+  width: 100%;
+  height: 90vh;
+  min-height: 520px;
+  background-size: cover;
+  background-position: center 20%;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+  transition: background-image 0.6s ease;
+}
+
+.banner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(9,9,9,0.85) 0%,
+    rgba(9,9,9,0.5) 40%,
+    transparent 70%
+  ),
+  linear-gradient(
+    to top,
+    var(--bg) 0%,
+    rgba(9,9,9,0.6) 25%,
+    transparent 60%
+  );
+}
+
+.banner-content {
+  position: relative;
+  z-index: 2;
+  padding: 0 64px 72px;
+  max-width: 600px;
+  animation: slideUp 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(32px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.banner-content h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(3rem, 7vw, 5.5rem);
+  letter-spacing: 2px;
+  line-height: 0.95;
+  margin-bottom: 16px;
+  text-shadow: 0 4px 32px rgba(0,0,0,0.8);
+}
+
+.banner-content p {
+  font-size: 1rem;
+  font-weight: 300;
+  line-height: 1.65;
+  color: rgba(240,240,240,0.85);
+  margin-bottom: 28px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.banner-content button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 13px 32px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+  box-shadow: 0 4px 20px var(--accent-glow);
+  text-transform: uppercase;
+}
+
+.banner-content button:hover {
+  background: #ff1a26;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px var(--accent-glow);
+}
+
+.banner-content button:active { transform: translateY(0); }
+
+/* ── PLAYER ── */
+#player {
+  display: none;
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+  z-index: 200;
+  background: #000;
+  animation: fadeIn 0.3s ease;
+}
+
+#player.active { display: block; }
+
+#close-player {
+  display: none;
+  position: fixed;
+  top: 20px; right: 24px;
+  z-index: 201;
+  background: rgba(9,9,9,0.85);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 1.5rem;
+  width: 42px; height: 42px;
+  border-radius: 50%;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, border-color 0.2s;
+  backdrop-filter: blur(8px);
+}
+
+#close-player.active { display: flex; }
+#close-player:hover { background: var(--accent); border-color: var(--accent); }
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── SECTION LABELS ── */
+main > h2, body > h2 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.6rem;
+  letter-spacing: 2px;
+  padding: 0 48px;
+  margin: 40px 0 16px;
+  color: var(--text);
+  opacity: 0.9;
+  position: relative;
+}
+
+main > h2::after, body > h2::after {
+  content: '';
+  display: inline-block;
+  width: 4px; height: 4px;
+  background: var(--accent);
+  border-radius: 50%;
+  margin-left: 10px;
+  vertical-align: middle;
+}
+
+/* ── ROW ── */
+.row {
+  display: flex;
+  gap: 12px;
+  padding: 8px 48px 24px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.row::-webkit-scrollbar { display: none; }
+
+/* ── CARD ── */
+.card {
+  flex: 0 0 var(--card-w);
+  height: var(--card-h);
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+  cursor: pointer;
+  scroll-snap-align: start;
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.3s;
+  background: var(--card);
+  border: 1px solid var(--border);
+  animation: cardIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(16px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s ease, filter 0.4s ease;
+  filter: brightness(0.88);
+}
+
+.card:hover {
+  transform: scale(1.07) translateY(-4px);
+  z-index: 10;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.7), 0 0 0 1px var(--accent);
+}
+
+.card:hover img {
+  transform: scale(1.06);
+  filter: brightness(0.6);
+}
+
+.card-info {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 16px 14px 14px;
+  background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, transparent 55%);
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.card:hover .card-info {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.card-info h3 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.05rem;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+  line-height: 1.2;
+}
+
+.card-info span {
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-weight: 300;
+  letter-spacing: 0.5px;
+  display: block;
+  margin-bottom: 10px;
+}
+
+.card-play {
+  width: 34px; height: 34px;
+  background: var(--accent);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  color: #fff;
+  box-shadow: 0 0 14px var(--accent-glow);
+  transition: transform 0.2s;
+  align-self: flex-start;
+}
+
+.card-play:hover { transform: scale(1.15); }
+
+/* ── FOOTER ── */
+footer {
+  text-align: center;
+  padding: 32px;
+  color: var(--muted);
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+  border-top: 1px solid var(--border);
+  margin-top: 32px;
+}
+
+/* ── GRAIN OVERLAY ── */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 128px;
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  .header { padding: 16px 20px; }
+  .header h1 { font-size: 1.8rem; }
+  .banner-content { padding: 0 24px 56px; }
+  main > h2, body > h2 { padding: 0 20px; font-size: 1.3rem; }
+  .row { padding: 8px 20px 20px; }
+  :root { --card-w: 140px; --card-h: 210px; }
+}

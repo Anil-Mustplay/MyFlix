@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>MyFlix</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<!-- 🔴 HEADER -->
+<div class="header">
+  <h1>MyFlix</h1>
+</div>
+<!-- 🎬 BANNER -->
+<div id="banner" class="banner">
+  <div class="banner-content">
+    <h1 id="title"></h1>
+    <p id="desc"></p>
+    <button onclick="playBanner()">▶ Play</button>
+  </div>
+</div>
+<!-- 🎥 PLAYER -->
+<iframe id="player"></iframe>
+<!-- 🎞️ ROWS -->
+<h2>Trending</h2>
+<div id="trending" class="row"></div>
+<h2>Action</h2>
+<div id="action" class="row"></div>
+<h2>Comedy</h2>
+<div id="comedy" class="row"></div>
+<script src="script.js"></script>
+</body>
+</html>
