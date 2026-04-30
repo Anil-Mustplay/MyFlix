@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MyFlix Admin</title>
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+<!-- 🔒 PASSWORD GATE -->
+<div class="gate" id="gate">
+  <div class="gate-box">
+    <div class="gate-logo">My<span>Flix</span> <em>Admin</em></div>
+    <p class="gate-sub">Enter your password to continue</p>
+    <div class="gate-field">
+      <input type="password" id="gateInput" placeholder="Password" autocomplete="current-password">
+      <button id="gateBtn">Unlock →</button>
+    </div>
+    <p class="gate-error" id="gateError"></p>
+    <p class="gate-hint">Default password: <code>myflix2024</code></p>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <span class="logo-text">My<span>Flix</span></span>
+    <span class="logo-badge">ADMIN</span>
+  </div>
+  <nav class="sidebar-nav">
+    <a href="#" class="nav-item active" data-page="dashboard">
+      <span class="nav-icon">▦</span> Dashboard
+    </a>
+    <a href="#" class="nav-item" data-page="movies">
+      <span class="nav-icon">🎬</span> All Movies
+    </a>
+    <a href="#" class="nav-item" data-page="trending">
+      <span class="nav-icon">🔥</span> Trending
+    </a>
+    <a href="#" class="nav-item" data-page="action">
+      <span class="nav-icon">⚡</span> Action
+    </a>
+    <a href="#" class="nav-item" data-page="comedy">
+      <span class="nav-icon">😄</span> Comedy
+    </a>
+  </nav>
+  <div class="sidebar-footer">
+    <a href="index.html" target="_blank" class="view-site-btn">↗ View Site</a>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <button class="sidebar-toggle" id="sidebarToggle">☰</button>
+    <div class="topbar-title" id="topbarTitle">Dashboard</div>
+    <button class="add-btn" id="topAddBtn" onclick="openModal()">+ Add Movie</button>
+  </header>
+
+  <!-- DASHBOARD PAGE -->
+  <section class="page active" id="page-dashboard">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">🎬</div>
+        <div class="stat-info">
+          <div class="stat-num" id="statTotal">0</div>
+          <div class="stat-label">Total Movies</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🔥</div>
+        <div class="stat-info">
+          <div class="stat-num" id="statTrending">0</div>
+          <div class="stat-label">Trending</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">⚡</div>
+        <div class="stat-info">
+          <div class="stat-num" id="statAction">0</div>
+          <div class="stat-label">Action</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">😄</div>
+        <div class="stat-info">
+          <div class="stat-num" id="statComedy">0</div>
+          <div class="stat-label">Comedy</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-header">
+      <h2>Recently Added</h2>
+    </div>
+    <div class="table-wrap">
+      <table class="movie-table" id="recentTable">
+        <thead>
+          <tr>
+            <th>Poster</th><th>Title</th><th>Year</th><th>Genre</th><th>Row</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="recentBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ALL MOVIES PAGE -->
+  <section class="page" id="page-movies">
+    <div class="section-header">
+      <h2>All Movies</h2>
+      <div class="search-wrap">
+        <input type="text" class="search-input" id="searchInput" placeholder="🔍  Search movies...">
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table class="movie-table" id="allTable">
+        <thead>
+          <tr>
+            <th>Poster</th><th>Title</th><th>Year</th><th>Genre</th><th>Row</th><th>Trailer</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="allBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- CATEGORY PAGES (trending / action / comedy) -->
+  <section class="page" id="page-trending">
+    <div class="section-header"><h2>🔥 Trending Row</h2></div>
+    <div class="table-wrap">
+      <table class="movie-table"><thead><tr><th>Poster</th><th>Title</th><th>Year</th><th>Genre</th><th>Trailer</th><th>Actions</th></tr></thead>
+      <tbody id="bodyTrending"></tbody></table>
+    </div>
+  </section>
+  <section class="page" id="page-action">
+    <div class="section-header"><h2>⚡ Action Row</h2></div>
+    <div class="table-wrap">
+      <table class="movie-table"><thead><tr><th>Poster</th><th>Title</th><th>Year</th><th>Genre</th><th>Trailer</th><th>Actions</th></tr></thead>
+      <tbody id="bodyAction"></tbody></table>
+    </div>
+  </section>
+  <section class="page" id="page-comedy">
+    <div class="section-header"><h2>😄 Comedy Row</h2></div>
+    <div class="table-wrap">
+      <table class="movie-table"><thead><tr><th>Poster</th><th>Title</th><th>Year</th><th>Genre</th><th>Trailer</th><th>Actions</th></tr></thead>
+      <tbody id="bodyComedy"></tbody></table>
+    </div>
+  </section>
+
+</div><!-- /main -->
+
+<!-- ADD / EDIT MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <h3 id="modalTitle">Add Movie</h3>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <form id="movieForm" autocomplete="off">
+      <input type="hidden" id="fId">
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>Title *</label>
+          <input type="text" id="fTitle" placeholder="e.g. Inception" required>
+        </div>
+        <div class="form-group">
+          <label>Year *</label>
+          <input type="number" id="fYear" placeholder="2024" min="1900" max="2099" required>
+        </div>
+        <div class="form-group">
+          <label>Genre *</label>
+          <input type="text" id="fGenre" placeholder="e.g. Sci-Fi" required>
+        </div>
+        <div class="form-group full">
+          <label>Row / Category *</label>
+          <select id="fRow" required>
+            <option value="">— Select —</option>
+            <option value="trending">🔥 Trending</option>
+            <option value="action">⚡ Action</option>
+            <option value="comedy">😄 Comedy</option>
+          </select>
+        </div>
+        <div class="form-group full">
+          <label>Description</label>
+          <textarea id="fDesc" rows="3" placeholder="Short description of the movie..."></textarea>
+        </div>
+        <div class="form-group full">
+          <label>Poster Image URL *</label>
+          <input type="url" id="fImg" placeholder="https://image.tmdb.org/t/p/w500/..." required>
+          <div class="img-preview-wrap">
+            <img id="imgPreview" src="" alt="" class="img-preview hidden">
+            <span class="img-hint">Paste a URL to preview →</span>
+          </div>
+        </div>
+        <div class="form-group full">
+          <label>YouTube Trailer ID *</label>
+          <div class="yt-row">
+            <input type="text" id="fTrailer" placeholder="e.g. Way9ZtDmGSY" required>
+            <a id="ytPreviewLink" href="#" target="_blank" class="yt-preview-btn" title="Preview on YouTube">▶ Preview</a>
+          </div>
+          <small class="field-hint">Only the video ID — the part after <code>?v=</code> in the YouTube URL.</small>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn-secondary" onclick="closeModal()">Cancel</button>
+        <button type="submit" class="btn-primary" id="formSubmitBtn">Add Movie</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- DELETE CONFIRM -->
+<div class="modal-overlay" id="deleteOverlay">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h3>Delete Movie</h3>
+      <button class="modal-close" onclick="closeDelete()">✕</button>
+    </div>
+    <p class="delete-msg">Are you sure you want to delete <strong id="deleteName"></strong>? This cannot be undone.</p>
+    <div class="form-actions">
+      <button class="btn-secondary" onclick="closeDelete()">Cancel</button>
+      <button class="btn-danger" id="confirmDeleteBtn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script src="admin.js"></script>
+</body>
+</html>
