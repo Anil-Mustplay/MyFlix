@@ -1,6 +1,5 @@
-// ── DATA ────────────────────────────────────────────────────────────────────
-// Uses TMDB image CDN + free YouTube trailers (no API key needed for embeds)
-const movies = {
+// ── DEFAULT DATA (fallback if admin hasn't saved anything yet) ────────────────
+const DEFAULT_DATA = {
   trending: [
     { id: 1, title: "Dune: Part Two", year: 2024, genre: "Sci-Fi", desc: "Paul Atreides unites with Chani and the Fremen while seeking revenge against the conspirators who destroyed his family.", img: "https://image.tmdb.org/t/p/w500/8b8R8l88Qje9dn9OE8PY05Nxl1X.jpg", trailer: "Way9ZtDmGSY" },
     { id: 2, title: "Oppenheimer", year: 2023, genre: "Drama", desc: "The story of American scientist J. Robert Oppenheimer and his role in the development of the atomic bomb during WWII.", img: "https://image.tmdb.org/t/p/w500/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg", trailer: "uYPbbksJxIg" },
@@ -18,20 +17,31 @@ const movies = {
     { id: 12, title: "The Batman", year: 2022, genre: "Action", desc: "When the Riddler targets Gotham's elite, Batman ventures into the city's underworld to uncover corruption.", img: "https://image.tmdb.org/t/p/w500/74xTEgt7R36Fpooo50r9T25onhq.jpg", trailer: "mqqft2x_Aa4" },
   ],
   comedy: [
-    { id: 13, title: "The Grand Budapest Hotel", year: 2014, genre: "Comedy", desc: "The adventures of Gustave H, a legendary concierge, and Zero, his lobby boy, involving the theft of a painting.", img: "https://image.tmdb.org/t/p/w1280/eWdyYQreja6JGCzqHWXpWHDrrPo.jpg", trailer: "1Fg5iWmQjwk" },
-    { id: 14, title: "Knives Out", year: 2019, genre: "Mystery", desc: "A detective investigates the death of a patriarch of an eccentric, combative family.", img: "https://image.tmdb.org/t/p/w1280/t47INT1sSNiJwJHJqxxQ7Vt3DE9.jpg", trailer: "qGqiHJTsRkQ" },
-    { id: 15, title: "Barbie", year: 2023, genre: "Comedy", desc: "Barbie and Ken leave their perfect utopia and venture into the real world, discovering human nature.", img: "https://image.tmdb.org/t/p/w1280/uUbdc9TMwbazp1zCNzGtXoBHhUa.jpg", trailer: "pBk4NYhWNMM" },
-    { id: 16, title: "The Menu", year: 2022, genre: "Dark Comedy", desc: "A young couple travels to an exclusive island restaurant where the chef has prepared a unique menu with shocking surprises.", img: "https://image.tmdb.org/t/p/w1280/fPtUgMcLIboqlTlPrq0bQpKK8eq.jpg", trailer: "uh7XP3HWqcE" },
+    { id: 13, title: "The Grand Budapest Hotel", year: 2014, genre: "Comedy", desc: "The adventures of Gustave H, a legendary concierge, and Zero, his lobby boy, involving the theft of a painting.", img: "https://image.tmdb.org/t/p/w500/eWdyYQreja6JrobOf2XFmalanden.jpg", trailer: "1Fg0RDlHBNQ" },
+    { id: 14, title: "Knives Out", year: 2019, genre: "Mystery", desc: "A detective investigates the death of a patriarch of an eccentric, combative family.", img: "https://image.tmdb.org/t/p/w500/pThyQovXQrws2Y4e7IVOqMt04gI.jpg", trailer: "qGqiHJTsRkQ" },
+    { id: 15, title: "Barbie", year: 2023, genre: "Comedy", desc: "Barbie and Ken leave their perfect utopia and venture into the real world, discovering human nature.", img: "https://image.tmdb.org/t/p/w500/iuFNMS8vlzmfa8TxfjbLQDKPEdM.jpg", trailer: "pBk4NYhWNMM" },
+    { id: 16, title: "The Menu", year: 2022, genre: "Dark Comedy", desc: "A young couple travels to an exclusive island restaurant where the chef has prepared a unique menu with shocking surprises.", img: "https://image.tmdb.org/t/p/w500/v5H9m64tOLqyjPpOuFXK3sFQYwl.jpg", trailer: "uh7XP3HWqcE" },
     { id: 17, title: "Glass Onion", year: 2022, genre: "Mystery", desc: "Benoit Blanc travels to Greece to peel back the layers of a mystery among a group of friends.", img: "https://image.tmdb.org/t/p/w500/vDGr1YdrlfbU9wxTOdpf3zChmv9.jpg", trailer: "9K0nAaVfAzE" },
-    { id: 18, title: "Triangle of Sadness", year: 2022, genre: "Dark Comedy", desc: "A celebrity couple is placed on a luxury cruise for the ultra-rich. What starts as a dream vacation soon becomes a nightmare.", img: "https://media.themoviedb.org/t/p/original/5CMhq9ncfN8B7ccNzMUq8DxcgV6.jpg", trailer: "VDvfFIZQIuQ" },
+    { id: 18, title: "Triangle of Sadness", year: 2022, genre: "Dark Comedy", desc: "A celebrity couple is placed on a luxury cruise for the ultra-rich. What starts as a dream vacation soon becomes a nightmare.", img: "https://image.tmdb.org/t/p/w500/nFCJGhUMRqAOaEWcRCJjDwHFPsN.jpg", trailer: "VDvfFIZQIuQ" },
   ]
 };
 
-// ── STATE ───────────────────────────────────────────────────────────────────
-let bannerMovie = movies.trending[0];
+// ── LOAD DATA (from admin localStorage or fallback to defaults) ───────────────
+function loadMovies() {
+  try {
+    const raw = localStorage.getItem('myflix_db');
+    return raw ? JSON.parse(raw) : DEFAULT_DATA;
+  } catch {
+    return DEFAULT_DATA;
+  }
+}
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+const movies = loadMovies();
+let bannerMovie = movies.trending[0] || movies.action[0] || movies.comedy[0];
 let closeBtn;
 
-// ── INIT ─────────────────────────────────────────────────────────────────────
+// ── INIT ──────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   setupHeader();
   setupBanner();
@@ -42,7 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
   addFooter();
 });
 
-// ── HEADER SCROLL ───────────────────────────────────────────────────────────
+// ── HEADER SCROLL ─────────────────────────────────────────────────────────────
 function setupHeader() {
   const header = document.querySelector('.header');
   window.addEventListener('scroll', () => {
@@ -50,18 +60,16 @@ function setupHeader() {
   }, { passive: true });
 }
 
-// ── BANNER ──────────────────────────────────────────────────────────────────
+// ── BANNER ────────────────────────────────────────────────────────────────────
 function setupBanner() {
-  // Pick a random trending movie for the banner
-  bannerMovie = movies.trending[Math.floor(Math.random() * movies.trending.length)];
+  const all = [...movies.trending, ...movies.action, ...movies.comedy];
+  bannerMovie = all[Math.floor(Math.random() * all.length)] || bannerMovie;
   updateBanner(bannerMovie);
 }
 
 function updateBanner(movie) {
   bannerMovie = movie;
   const banner = document.getElementById('banner');
-  // Large backdrop image
-  const backdropId = movie.img.replace('/w500/', '/original/');
   banner.style.backgroundImage = `url(${movie.img.replace('/w500/', '/w1280/')})`;
   document.getElementById('title').textContent = movie.title;
   document.getElementById('desc').textContent = movie.desc;
@@ -69,21 +77,22 @@ function updateBanner(movie) {
   // Re-trigger animation
   const content = banner.querySelector('.banner-content');
   content.style.animation = 'none';
-  requestAnimationFrame(() => {
-    content.style.animation = '';
-  });
+  requestAnimationFrame(() => { content.style.animation = ''; });
 }
 
-// ── PLAY BANNER ──────────────────────────────────────────────────────────────
-function playBanner() {
-  openPlayer(bannerMovie.trailer);
-}
+// ── PLAY BANNER ───────────────────────────────────────────────────────────────
+function playBanner() { openPlayer(bannerMovie.trailer); }
 window.playBanner = playBanner;
 
-// ── RENDER ROW ───────────────────────────────────────────────────────────────
+// ── RENDER ROW ────────────────────────────────────────────────────────────────
 function renderRow(containerId, movieList) {
   const container = document.getElementById(containerId);
+  if (!container) return;
   container.innerHTML = '';
+  if (!movieList || !movieList.length) {
+    container.innerHTML = '<p style="color:#555;font-size:0.85rem;padding:8px 0">No movies in this row.</p>';
+    return;
+  }
   movieList.forEach((movie, i) => {
     const card = createCard(movie, i);
     container.appendChild(card);
@@ -94,28 +103,21 @@ function createCard(movie, index) {
   const card = document.createElement('div');
   card.className = 'card';
   card.style.animationDelay = `${index * 60}ms`;
-
   card.innerHTML = `
-    <img src="${movie.img}" alt="${movie.title}" loading="lazy" onerror="this.src='https://via.placeholder.com/200x300/161616/444?text=No+Image'">
+    <img src="${movie.img}" alt="${movie.title}" loading="lazy"
+      onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22300%22><rect width=%22200%22 height=%22300%22 fill=%22%231a1a1a%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-size=%2214%22 fill=%22%23444%22>No Image</text></svg>'">
     <div class="card-info">
       <h3>${movie.title}</h3>
       <span>${movie.year} · ${movie.genre}</span>
       <div class="card-play">▶</div>
     </div>
   `;
-
-  card.addEventListener('click', () => {
-    updateBanner(movie);
-    openPlayer(movie.trailer);
-  });
-
-  // Hover: update banner without playing
+  card.addEventListener('click', () => { updateBanner(movie); openPlayer(movie.trailer); });
   card.addEventListener('mouseenter', () => updateBanner(movie));
-
   return card;
 }
 
-// ── PLAYER ───────────────────────────────────────────────────────────────────
+// ── PLAYER ────────────────────────────────────────────────────────────────────
 function setupCloseButton() {
   closeBtn = document.createElement('button');
   closeBtn.id = 'close-player';
@@ -141,12 +143,9 @@ function closePlayer() {
   document.body.style.overflow = '';
 }
 
-// Close on Escape
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') closePlayer();
-});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closePlayer(); });
 
-// ── FOOTER ───────────────────────────────────────────────────────────────────
+// ── FOOTER ────────────────────────────────────────────────────────────────────
 function addFooter() {
   const footer = document.createElement('footer');
   footer.innerHTML = 'MYFLIX &nbsp;·&nbsp; FOR DEMO PURPOSES ONLY';
