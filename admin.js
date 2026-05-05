@@ -1,12 +1,12 @@
 // ── AUTH / PASSWORD GATE ──────────────────────────────────────────────────────
 const AUTH_KEY   = 'myflix_auth_token';
 const HASH_KEY   = 'myflix_pw_hash';
-const SESSION_MS = 8 * 60 * 60 * 1000; // 8 hours
-const DEFAULT_HASH = 'dcb820a04659def4de2d0e4b5bfab1a2b722798d48f46ac9ce0fcb4780b4ddae'; // myflix2024
+const SESSION_MS = 8 * 60 * 60 * 1000;
+const DEFAULT_HASH = 'dcb820a04659def4de2d0e4b5bfab1a2b722798d48f46ac9ce0fcb4780b4ddae';
 
 async function sha256(str) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
 }
 function getStoredHash() { return localStorage.getItem(HASH_KEY) || DEFAULT_HASH; }
 function isSessionValid() {
@@ -19,7 +19,7 @@ window.adminLogout = logout;
 window.setAdminPassword = async function(p) {
   if (!p || p.length < 4) { console.warn('Min 4 chars'); return; }
   localStorage.setItem(HASH_KEY, await sha256(p));
-  console.log('%c✅ Password updated!', 'color:lime');
+  console.log('%c Password updated!', 'color:lime');
 };
 
 const gate      = document.getElementById('gate');
@@ -31,11 +31,9 @@ async function tryUnlock() {
   const pw = gateInput.value.trim();
   if (!pw) { shakeGate(); return; }
   if (await sha256(pw) === getStoredHash()) {
-    grantSession();
-    gate.classList.add('hidden');
-    gateError.textContent = '';
+    grantSession(); gate.classList.add('hidden'); gateError.textContent = '';
   } else {
-    gateError.textContent = '✕  Incorrect password. Try again.';
+    gateError.textContent = 'Incorrect password. Try again.';
     gateInput.value = ''; gateInput.focus(); shakeGate();
   }
 }
@@ -46,9 +44,8 @@ function shakeGate() {
 }
 gateBtn.addEventListener('click', tryUnlock);
 gateInput.addEventListener('keydown', e => { if (e.key === 'Enter') tryUnlock(); });
-
 const shakeStyle = document.createElement('style');
-shakeStyle.textContent = `@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-10px)}40%{transform:translateX(10px)}60%{transform:translateX(-7px)}80%{transform:translateX(7px)}}`;
+shakeStyle.textContent = '@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-10px)}40%{transform:translateX(10px)}60%{transform:translateX(-7px)}80%{transform:translateX(7px)}}';
 document.head.appendChild(shakeStyle);
 
 if (isSessionValid()) {
@@ -67,103 +64,91 @@ document.addEventListener('DOMContentLoaded', () => {
   const btn = document.createElement('button');
   btn.className = 'view-site-btn';
   btn.style.cssText = 'border-color:#3a1a1a;color:#ff4d57;margin-top:8px;width:100%;background:rgba(229,9,20,0.06);cursor:pointer;font-family:inherit;';
-  btn.textContent = '🔒 Lock Admin';
+  btn.textContent = 'Lock Admin';
   btn.onclick = logout;
   footer.appendChild(btn);
+
+  // Download button in topbar
+  const topbar = document.querySelector('.topbar');
+  const dlBtn = document.createElement('button');
+  dlBtn.className = 'add-btn';
+  dlBtn.style.cssText = 'background:#1a1a1a;border:1px solid #333;color:#aaa;margin-right:8px;';
+  dlBtn.textContent = 'Download data.js';
+  dlBtn.title = 'Download updated data.js and upload to GitHub';
+  dlBtn.onclick = exportDataJS;
+  topbar.insertBefore(dlBtn, document.getElementById('topAddBtn'));
 });
 
 // ── IMAGE PROXY ───────────────────────────────────────────────────────────────
-// Routes any image URL through wsrv.nl so TMDB images load on GitHub Pages
 function proxyImg(url) {
   if (!url) return url;
   if (url.includes('wsrv.nl')) return url;
   const clean = url.replace(/^https?:\/\//, '');
-  return `https://wsrv.nl/?url=${encodeURIComponent(clean)}&w=400&output=jpg`;
+  return 'https://wsrv.nl/?url=' + encodeURIComponent(clean) + '&w=400&output=jpg';
 }
 
-// ── DEFAULT DATA ──────────────────────────────────────────────────────────────
-const DEFAULT_DATA = {
-  trending: [
-    { id:1,  title:"Dune: Part Two",             year:2024, genre:"Sci-Fi",     desc:"Paul Atreides unites with Chani and the Fremen while seeking revenge against the conspirators who destroyed his family.",                img:"https://image.tmdb.org/t/p/w500/8b8R8l88Qje9dn9OE8PY05Nxl1X.jpg", trailer:"Way9ZtDmGSY" },
-    { id:2,  title:"Oppenheimer",                year:2023, genre:"Drama",      desc:"The story of American scientist J. Robert Oppenheimer and his role in the development of the atomic bomb during WWII.",                 img:"https://image.tmdb.org/t/p/w500/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg", trailer:"uYPbbksJxIg" },
-    { id:3,  title:"Poor Things",                year:2023, genre:"Fantasy",    desc:"The incredible tale of Bella Baxter, a young woman brought back to life by the brilliant and unorthodox scientist Dr. Godwin Baxter.",  img:"https://image.tmdb.org/t/p/w500/kCGlIMHnOm8JPXIf6ChkDLhm2IW.jpg", trailer:"RlbR5N6veqw" },
-    { id:4,  title:"The Zone of Interest",       year:2023, genre:"Drama",      desc:"A Nazi officer and his wife build their dream life next to the walls of Auschwitz.",                                                    img:"https://image.tmdb.org/t/p/w500/hUu9zyZmKuCcJBgB56jHqMpUWN9.jpg", trailer:"p9GMMV2WVTI" },
-    { id:5,  title:"Saltburn",                   year:2023, genre:"Thriller",   desc:"A student at Oxford University finds himself drawn into the world of a charming and aristocratic classmate.",                          img:"https://image.tmdb.org/t/p/w500/qitIosKd0cRS0OniMWMHdS8DKly.jpg", trailer:"VJuhyf9GEdA" },
-    { id:6,  title:"Killers of the Flower Moon", year:2023, genre:"Crime",      desc:"Members of the Osage Nation are murdered under mysterious circumstances in 1920s Oklahoma.",                                           img:"https://image.tmdb.org/t/p/w500/dB6Krk806zeqd0YNp2ngQ9zXteH.jpg", trailer:"EG0si5bSd6I" },
-  ],
-  action: [
-    { id:7,  title:"Mad Max: Fury Road",                   year:2015, genre:"Action", desc:"In a post-apocalyptic wasteland, Max teams up with Furiosa to flee from a cult-leader and his army.",                           img:"https://image.tmdb.org/t/p/w500/8tZYtuWezp8JbcsvHYO0O46tFbo.jpg", trailer:"hEJnMQG9ev8" },
-    { id:8,  title:"Top Gun: Maverick",                    year:2022, genre:"Action", desc:"After more than thirty years of service as a top naval aviator, Pete Mitchell is pushing the limits as a courageous test pilot.",img:"https://image.tmdb.org/t/p/w500/62HCnUTziyWcpDaBO2i1DX17ljH.jpg", trailer:"qSqVVswa420" },
-    { id:9,  title:"Everything Everywhere All at Once",    year:2022, genre:"Action", desc:"An aging Chinese immigrant is swept up in an insane adventure where she alone can save existence by exploring other universes.",  img:"https://image.tmdb.org/t/p/w500/w3LxiVYdWWRvEVdn5RYq6jIqkb1.jpg", trailer:"wxN1T1uxQ2g" },
-    { id:10, title:"Mission: Impossible – Dead Reckoning", year:2023, genre:"Action", desc:"Ethan Hunt and the IMF team must track down a dangerous weapon before it falls into the wrong hands.",                          img:"https://image.tmdb.org/t/p/w500/NNxYkU70HPurnNCSiCjYAmacwm.jpg",  trailer:"avz06PDqDbM" },
-    { id:11, title:"John Wick: Chapter 4",                 year:2023, genre:"Action", desc:"John Wick uncovers a path to defeating the High Table, but before he can earn his freedom he must face a new enemy.",           img:"https://image.tmdb.org/t/p/w500/vZloFAK7NmvMGKE7VkF5UHaz0I.jpg", trailer:"yjui7DoNFNk" },
-    { id:12, title:"The Batman",                           year:2022, genre:"Action", desc:"When the Riddler targets Gotham's elite, Batman ventures into the city's underworld to uncover corruption.",                    img:"https://image.tmdb.org/t/p/w500/74xTEgt7R36Fpooo50r9T25onhq.jpg", trailer:"mqqft2x_Aa4" },
-  ],
-  comedy: [
-    { id:13, title:"The Grand Budapest Hotel", year:2014, genre:"Comedy",      desc:"The adventures of Gustave H, a legendary concierge, and Zero, his lobby boy, involving the theft of a painting.",                      img:"https://image.tmdb.org/t/p/w500/eWdyYQreja6JrobOf2XFmalanden.jpg", trailer:"1Fg0RDlHBNQ" },
-    { id:14, title:"Knives Out",               year:2019, genre:"Mystery",     desc:"A detective investigates the death of a patriarch of an eccentric, combative family.",                                                  img:"https://image.tmdb.org/t/p/w500/pThyQovXQrws2Y4e7IVOqMt04gI.jpg", trailer:"qGqiHJTsRkQ" },
-    { id:15, title:"Barbie",                   year:2023, genre:"Comedy",      desc:"Barbie and Ken leave their perfect utopia and venture into the real world, discovering human nature.",                                  img:"https://image.tmdb.org/t/p/w500/iuFNMS8vlzmfa8TxfjbLQDKPEdM.jpg", trailer:"pBk4NYhWNMM" },
-    { id:16, title:"The Menu",                 year:2022, genre:"Dark Comedy", desc:"A young couple travels to an exclusive island restaurant where the chef has prepared a unique menu with shocking surprises.",            img:"https://image.tmdb.org/t/p/w500/v5H9m64tOLqyjPpOuFXK3sFQYwl.jpg", trailer:"uh7XP3HWqcE" },
-    { id:17, title:"Glass Onion",              year:2022, genre:"Mystery",     desc:"Benoit Blanc travels to Greece to peel back the layers of a mystery among a group of friends.",                                        img:"https://image.tmdb.org/t/p/w500/vDGr1YdrlfbU9wxTOdpf3zChmv9.jpg", trailer:"9K0nAaVfAzE" },
-    { id:18, title:"Triangle of Sadness",      year:2022, genre:"Dark Comedy", desc:"A celebrity couple is placed on a luxury cruise for the ultra-rich. What starts as a dream vacation soon becomes a nightmare.",        img:"https://image.tmdb.org/t/p/w500/nFCJGhUMRqAOaEWcRCJjDwHFPsN.jpg", trailer:"VDvfFIZQIuQ" },
-  ]
-};
-
-// ── STATE ─────────────────────────────────────────────────────────────────────
-let db = loadDB();
+// ── DATA — loaded from data.js global, kept in memory only ───────────────────
+let db = (typeof MYFLIX_DATA !== 'undefined') ? JSON.parse(JSON.stringify(MYFLIX_DATA)) : {trending:[],action:[],comedy:[]};
 let nextId = computeNextId();
-let editingId = null;
+let editingId  = null;
 let deletingId = null;
-
-// ── DB HELPERS ────────────────────────────────────────────────────────────────
-function loadDB() {
-  try {
-    const raw = localStorage.getItem('myflix_db');
-    if (!raw) return JSON.parse(JSON.stringify(DEFAULT_DATA));
-    const parsed = JSON.parse(raw);
-    if (!parsed.trending || !parsed.action || !parsed.comedy) return JSON.parse(JSON.stringify(DEFAULT_DATA));
-    return parsed;
-  } catch { return JSON.parse(JSON.stringify(DEFAULT_DATA)); }
-}
-
-function saveDB() {
-  try {
-    localStorage.setItem('myflix_db', JSON.stringify(db));
-    return true;
-  } catch(e) {
-    showToast('Save failed: ' + e.message, 'error');
-    return false;
-  }
-}
+let hasUnsaved = false;
 
 function computeNextId() {
   const all = [...db.trending, ...db.action, ...db.comedy];
   return all.length ? Math.max(...all.map(m => Number(m.id))) + 1 : 1;
 }
-
 function allMovies() {
   return [
-    ...db.trending.map(m => ({ ...m, row: 'trending' })),
-    ...db.action.map(m =>   ({ ...m, row: 'action'   })),
-    ...db.comedy.map(m =>   ({ ...m, row: 'comedy'   })),
+    ...db.trending.map(m => ({...m, row:'trending'})),
+    ...db.action.map(m =>   ({...m, row:'action'})),
+    ...db.comedy.map(m =>   ({...m, row:'comedy'})),
   ];
 }
-
 function findMovie(id) {
   const nid = Number(id);
-  for (const row of ['trending', 'action', 'comedy']) {
+  for (const row of ['trending','action','comedy']) {
     const m = db[row].find(m => Number(m.id) === nid);
-    if (m) return { ...m, row };
+    if (m) return {...m, row};
   }
   return null;
 }
-
-function deleteMovie(id) {
+function deleteFromDB(id) {
   const nid = Number(id);
-  for (const row of ['trending', 'action', 'comedy']) {
+  for (const row of ['trending','action','comedy']) {
     db[row] = db[row].filter(m => Number(m.id) !== nid);
   }
-  saveDB();
+}
+
+// ── EXPORT data.js ────────────────────────────────────────────────────────────
+function exportDataJS() {
+  const now = new Date().toISOString().slice(0,19).replace('T',' ');
+  const content = '// MyFlix Movie Database - Generated ' + now + '\n// Upload this file to GitHub to publish changes\n\nconst MYFLIX_DATA = ' + JSON.stringify(db, null, 2) + ';\n';
+  const blob = new Blob([content], {type:'text/javascript'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'data.js';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  hasUnsaved = false;
+  updateBanner(false);
+  showToast('data.js downloaded! Upload it to your GitHub repo.', 'success');
+}
+window.exportDataJS = exportDataJS;
+
+// ── UNSAVED CHANGES BANNER ────────────────────────────────────────────────────
+function updateBanner(show) {
+  let b = document.getElementById('dlBanner');
+  if (!b) {
+    b = document.createElement('div');
+    b.id = 'dlBanner';
+    b.style.cssText = 'position:fixed;bottom:0;left:220px;right:0;z-index:400;background:#1a0a00;border-top:2px solid #e50914;padding:14px 28px;display:flex;align-items:center;gap:16px;font-size:0.85rem;color:#f0f0f0;transition:transform 0.3s ease;transform:translateY(100%)';
+    b.innerHTML = '<span style="flex:1"><strong>Unsaved changes.</strong> Download data.js and upload to GitHub to publish.</span>' +
+      '<button onclick="exportDataJS()" style="background:#e50914;color:#fff;border:none;padding:9px 20px;border-radius:4px;font-weight:600;cursor:pointer;">Download data.js</button>' +
+      '<button onclick="document.getElementById(\'dlBanner\').style.transform=\'translateY(100%)\'" style="background:transparent;border:1px solid #444;color:#aaa;padding:9px 14px;border-radius:4px;cursor:pointer;margin-left:8px;">Dismiss</button>';
+    document.body.appendChild(b);
+  }
+  requestAnimationFrame(() => { b.style.transform = show ? 'translateY(0)' : 'translateY(100%)'; });
 }
 
 // ── RENDER ────────────────────────────────────────────────────────────────────
@@ -171,47 +156,35 @@ function renderAll() {
   updateStats();
   renderTable('recentBody',   allMovies().slice(-6).reverse(), true);
   renderTable('allBody',      allMovies(), true);
-  renderTable('bodyTrending', db.trending.map(m => ({ ...m, row:'trending' })));
-  renderTable('bodyAction',   db.action.map(m =>   ({ ...m, row:'action'   })));
-  renderTable('bodyComedy',   db.comedy.map(m =>   ({ ...m, row:'comedy'   })));
+  renderTable('bodyTrending', db.trending.map(m => ({...m, row:'trending'})));
+  renderTable('bodyAction',   db.action.map(m =>   ({...m, row:'action'})));
+  renderTable('bodyComedy',   db.comedy.map(m =>   ({...m, row:'comedy'})));
 }
-
 function updateStats() {
   document.getElementById('statTotal').textContent    = allMovies().length;
   document.getElementById('statTrending').textContent = db.trending.length;
   document.getElementById('statAction').textContent   = db.action.length;
   document.getElementById('statComedy').textContent   = db.comedy.length;
 }
-
-function renderTable(tbodyId, movies, showRow = false) {
+function renderTable(tbodyId, movies, showRow) {
   const tbody = document.getElementById(tbodyId);
   if (!tbody) return;
-  if (!movies.length) {
-    tbody.innerHTML = `<tr class="empty-row"><td colspan="7">No movies found.</td></tr>`;
-    return;
-  }
-  tbody.innerHTML = movies.map(m => {
-    const thumb = proxyImg(m.img);
-    return `<tr>
-      <td><img class="poster-thumb" src="${thumb}" alt="${m.title}"
-        onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2258%22><rect width=%2240%22 height=%2258%22 fill=%22%231a1a1a%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-size=%228%22 fill=%22%23555%22>IMG</text></svg>'">
-      </td>
-      <td class="movie-title-cell">${m.title}<small>${m.desc ? m.desc.substring(0,60)+'…' : '—'}</small></td>
-      <td>${m.year}</td>
-      <td>${m.genre}</td>
-      ${showRow ? `<td><span class="row-badge ${m.row}">${m.row}</span></td>` : ''}
-      <td><a class="yt-link" href="https://youtube.com/watch?v=${m.trailer}" target="_blank">▶ ${m.trailer}</a></td>
-      <td><div class="action-btns">
-        <button class="btn-edit"   onclick="startEdit(${m.id})">✏ Edit</button>
-        <button class="btn-delete" onclick="startDelete(${m.id})">🗑 Delete</button>
-      </div></td>
-    </tr>`;
-  }).join('');
+  if (!movies.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="7">No movies found.</td></tr>'; return; }
+  tbody.innerHTML = movies.map(m => '<tr>' +
+    '<td><img class="poster-thumb" src="' + proxyImg(m.img) + '" alt="' + m.title + '" onerror="this.src=\'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2258%22><rect width=%2240%22 height=%2258%22 fill=%22%231a1a1a%22/></svg>\'"></td>' +
+    '<td class="movie-title-cell">' + m.title + '<small>' + (m.desc ? m.desc.substring(0,60)+'...' : '') + '</small></td>' +
+    '<td>' + m.year + '</td><td>' + m.genre + '</td>' +
+    (showRow ? '<td><span class="row-badge ' + m.row + '">' + m.row + '</span></td>' : '') +
+    '<td><a class="yt-link" href="https://youtube.com/watch?v=' + m.trailer + '" target="_blank">Play ' + m.trailer + '</a></td>' +
+    '<td><div class="action-btns">' +
+    '<button class="btn-edit" onclick="startEdit(' + m.id + ')">Edit</button>' +
+    '<button class="btn-delete" onclick="startDelete(' + m.id + ')">Delete</button>' +
+    '</div></td></tr>'
+  ).join('');
 }
 
 // ── NAVIGATION ────────────────────────────────────────────────────────────────
-const pageTitles = { dashboard:'Dashboard', movies:'All Movies', trending:'🔥 Trending', action:'⚡ Action', comedy:'😄 Comedy' };
-
+const pageTitles = {dashboard:'Dashboard',movies:'All Movies',trending:'Trending',action:'Action',comedy:'Comedy'};
 document.querySelectorAll('.nav-item').forEach(item => {
   item.addEventListener('click', e => {
     e.preventDefault();
@@ -219,14 +192,12 @@ document.querySelectorAll('.nav-item').forEach(item => {
     document.getElementById('sidebar').classList.remove('open');
   });
 });
-
 function switchPage(page) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.page === page));
-  document.querySelectorAll('.page').forEach(p => p.classList.toggle('active', p.id === `page-${page}`));
+  document.querySelectorAll('.page').forEach(p => p.classList.toggle('active', p.id === 'page-'+page));
   document.getElementById('topbarTitle').textContent = pageTitles[page] || page;
   renderAll();
 }
-
 document.getElementById('sidebarToggle').addEventListener('click', () => {
   document.getElementById('sidebar').classList.toggle('open');
 });
@@ -234,20 +205,16 @@ document.getElementById('sidebarToggle').addEventListener('click', () => {
 // ── SEARCH ────────────────────────────────────────────────────────────────────
 document.getElementById('searchInput').addEventListener('input', function() {
   const q = this.value.toLowerCase().trim();
-  const filtered = allMovies().filter(m =>
-    m.title.toLowerCase().includes(q) ||
-    m.genre.toLowerCase().includes(q) ||
-    String(m.year).includes(q)
-  );
-  renderTable('allBody', filtered, true);
+  renderTable('allBody', allMovies().filter(m =>
+    m.title.toLowerCase().includes(q) || m.genre.toLowerCase().includes(q) || String(m.year).includes(q)
+  ), true);
 });
 
 // ── MODAL ─────────────────────────────────────────────────────────────────────
-function openModal(id = null) {
-  editingId = id !== null ? Number(id) : null;
+function openModal(id) {
+  editingId = id != null ? Number(id) : null;
   document.getElementById('movieForm').reset();
   hideImgPreview();
-
   if (editingId !== null) {
     const m = findMovie(editingId);
     if (!m) { showToast('Movie not found.', 'error'); return; }
@@ -269,58 +236,31 @@ function openModal(id = null) {
   }
   document.getElementById('modalOverlay').classList.add('open');
 }
-
-function closeModal() {
-  document.getElementById('modalOverlay').classList.remove('open');
-  editingId = null;
-}
-
+function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); editingId = null; }
 window.openModal  = openModal;
 window.closeModal = closeModal;
 
-// Image preview — proxied so any TMDB/external URL displays correctly
-document.getElementById('fImg').addEventListener('input', function() {
-  showImgPreview(this.value.trim());
-});
-
+document.getElementById('fImg').addEventListener('input', function() { showImgPreview(this.value.trim()); });
 function showImgPreview(url) {
-  const img  = document.getElementById('imgPreview');
-  const hint = document.querySelector('.img-hint');
-  if (url) {
-    img.src = proxyImg(url);
-    img.classList.remove('hidden');
-    hint.style.display = 'none';
-  } else {
-    hideImgPreview();
-  }
+  const img = document.getElementById('imgPreview'), hint = document.querySelector('.img-hint');
+  if (url) { img.src = proxyImg(url); img.classList.remove('hidden'); hint.style.display = 'none'; }
+  else hideImgPreview();
 }
-
 function hideImgPreview() {
   const img = document.getElementById('imgPreview');
-  img.classList.add('hidden');
-  img.src = '';
+  img.classList.add('hidden'); img.src = '';
   document.querySelector('.img-hint').style.display = '';
 }
-
-// YouTube preview link
-document.getElementById('fTrailer').addEventListener('input', function() {
-  updateYtLink(this.value.trim());
-});
-
+document.getElementById('fTrailer').addEventListener('input', function() { updateYtLink(this.value.trim()); });
 function updateYtLink(id) {
   const link = document.getElementById('ytPreviewLink');
-  link.href          = id ? `https://www.youtube.com/watch?v=${id}` : '#';
+  link.href = id ? 'https://www.youtube.com/watch?v=' + id : '#';
   link.style.opacity = id ? '1' : '0.4';
 }
+document.getElementById('modalOverlay').addEventListener('click', function(e) { if (e.target===this) closeModal(); });
 
-document.getElementById('modalOverlay').addEventListener('click', function(e) {
-  if (e.target === this) closeModal();
-});
-
-// Form submit
 document.getElementById('movieForm').addEventListener('submit', function(e) {
   e.preventDefault();
-
   const title   = document.getElementById('fTitle').value.trim();
   const year    = parseInt(document.getElementById('fYear').value);
   const genre   = document.getElementById('fGenre').value.trim();
@@ -328,80 +268,55 @@ document.getElementById('movieForm').addEventListener('submit', function(e) {
   const desc    = document.getElementById('fDesc').value.trim();
   const img     = document.getElementById('fImg').value.trim();
   const trailer = document.getElementById('fTrailer').value.trim();
-
-  if (!title || !year || !genre || !row || !img || !trailer) {
-    showToast('Please fill in all required fields.', 'error');
-    return;
-  }
-
+  if (!title || !year || !genre || !row || !img || !trailer) { showToast('Fill in all required fields.', 'error'); return; }
   if (editingId !== null) {
-    // Remove from whichever row it's in
-    for (const r of ['trending', 'action', 'comedy']) {
+    for (const r of ['trending','action','comedy']) {
       const idx = db[r].findIndex(m => Number(m.id) === editingId);
       if (idx !== -1) { db[r].splice(idx, 1); break; }
     }
-    db[row].push({ id: editingId, title, year, genre, desc, img, trailer });
-    showToast(`"${title}" updated successfully!`, 'success');
+    db[row].push({id:editingId, title, year, genre, desc, img, trailer});
+    showToast('"' + title + '" updated! Download data.js to publish.', 'success');
   } else {
-    const newId = nextId++;
-    db[row].push({ id: newId, title, year, genre, desc, img, trailer });
-    showToast(`"${title}" added to ${row}!`, 'success');
+    db[row].push({id:nextId++, title, year, genre, desc, img, trailer});
+    showToast('"' + title + '" added! Download data.js to publish.', 'success');
   }
-
-  if (saveDB()) {
-    closeModal();
-    renderAll();
-  }
+  hasUnsaved = true;
+  updateBanner(true);
+  closeModal();
+  renderAll();
 });
 
 // ── EDIT / DELETE ─────────────────────────────────────────────────────────────
-function startEdit(id)   { openModal(id); }
+function startEdit(id) { openModal(id); }
 window.startEdit = startEdit;
-
 function startDelete(id) {
   deletingId = Number(id);
   const m = findMovie(deletingId);
   document.getElementById('deleteName').textContent = m ? m.title : 'this movie';
   document.getElementById('deleteOverlay').classList.add('open');
 }
-function closeDelete() {
-  deletingId = null;
-  document.getElementById('deleteOverlay').classList.remove('open');
-}
+function closeDelete() { deletingId = null; document.getElementById('deleteOverlay').classList.remove('open'); }
 window.startDelete = startDelete;
 window.closeDelete = closeDelete;
-
 document.getElementById('confirmDeleteBtn').addEventListener('click', () => {
   if (deletingId === null) return;
   const m = findMovie(deletingId);
-  deleteMovie(deletingId);
-  showToast(`"${m?.title}" deleted.`, 'success');
-  closeDelete();
-  renderAll();
+  deleteFromDB(deletingId);
+  hasUnsaved = true; updateBanner(true);
+  showToast('"' + (m ? m.title : 'Movie') + '" deleted! Download data.js to publish.', 'success');
+  closeDelete(); renderAll();
 });
-
-document.getElementById('deleteOverlay').addEventListener('click', function(e) {
-  if (e.target === this) closeDelete();
-});
+document.getElementById('deleteOverlay').addEventListener('click', function(e) { if (e.target===this) closeDelete(); });
 
 // ── TOAST ─────────────────────────────────────────────────────────────────────
 let toastTimer;
-function showToast(msg, type = 'success') {
+function showToast(msg, type) {
   const t = document.getElementById('toast');
   t.textContent = msg;
-  t.className = `toast show ${type}`;
+  t.className = 'toast show ' + (type||'success');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { t.className = 'toast'; }, 3200);
+  toastTimer = setTimeout(() => { t.className = 'toast'; }, 4000);
 }
-
-// ── RESET ─────────────────────────────────────────────────────────────────────
-window.resetMyflixDB = function() {
-  localStorage.removeItem('myflix_db');
-  db = JSON.parse(JSON.stringify(DEFAULT_DATA));
-  nextId = computeNextId();
-  renderAll();
-  showToast('Database reset to defaults.', 'success');
-};
 
 // ── BOOT ──────────────────────────────────────────────────────────────────────
 renderAll();
