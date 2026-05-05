@@ -1,6 +1,11 @@
+bash
+
+cat > /home/claude/admin.js << 'ADMINEOF'
 // ── AUTH / PASSWORD GATE ──────────────────────────────────────────────────────
-const AUTH_KEY   = 'myflix_auth_token';
-const HASH_KEY   = 'myflix_pw_hash';
+const AUTH_KEY = 'myflix_auth_token';
+const HASH_KEY = 'myflix_pw_hash';
+const DB_KEY   = 'myflix_db';
+const GH_KEY   = 'myflix_gh_settings';
 const SESSION_MS = 8 * 60 * 60 * 1000;
 const DEFAULT_HASH = 'dcb820a04659def4de2d0e4b5bfab1a2b722798d48f46ac9ce0fcb4780b4ddae';
 
@@ -19,10 +24,10 @@ window.adminLogout = logout;
 window.setAdminPassword = async function(p) {
   if (!p || p.length < 4) { console.warn('Min 4 chars'); return; }
   localStorage.setItem(HASH_KEY, await sha256(p));
-  console.log('%c Password updated!', 'color:lime');
+  console.log('%c✅ Password updated!', 'color:lime');
 };
 
-const gate      = document.getElementById('gate');
+const gate = document.getElementById('gate');
 const gateInput = document.getElementById('gateInput');
 const gateBtn   = document.getElementById('gateBtn');
 const gateError = document.getElementById('gateError');
@@ -33,7 +38,7 @@ async function tryUnlock() {
   if (await sha256(pw) === getStoredHash()) {
     grantSession(); gate.classList.add('hidden'); gateError.textContent = '';
   } else {
-    gateError.textContent = 'Incorrect password. Try again.';
+    gateError.textContent = '✕ Incorrect password. Try again.';
     gateInput.value = ''; gateInput.focus(); shakeGate();
   }
 }
@@ -61,38 +66,42 @@ if (isSessionValid()) {
 
 document.addEventListener('DOMContentLoaded', () => {
   const footer = document.querySelector('.sidebar-footer');
-  const btn = document.createElement('button');
-  btn.className = 'view-site-btn';
-  btn.style.cssText = 'border-color:#3a1a1a;color:#ff4d57;margin-top:8px;width:100%;background:rgba(229,9,20,0.06);cursor:pointer;font-family:inherit;';
-  btn.textContent = 'Lock Admin';
-  btn.onclick = logout;
-  footer.appendChild(btn);
-
-  // Download button in topbar
-  const topbar = document.querySelector('.topbar');
-  const dlBtn = document.createElement('button');
-  dlBtn.className = 'add-btn';
-  dlBtn.style.cssText = 'background:#1a1a1a;border:1px solid #333;color:#aaa;margin-right:8px;';
-  dlBtn.textContent = 'Download data.js';
-  dlBtn.title = 'Download updated data.js and upload to GitHub';
-  dlBtn.onclick = exportDataJS;
-  topbar.insertBefore(dlBtn, document.getElementById('topAddBtn'));
+  const lockBtn = document.createElement('button');
+  lockBtn.className = 'view-site-btn';
+  lockBtn.style.cssText = 'border-color:#3a1a1a;color:#ff4d57;margin-top:8px;width:100%;background:rgba(229,9,20,0.06);cursor:pointer;font-family:inherit;';
+  lockBtn.textContent = '🔒 Lock Admin';
+  lockBtn.onclick = logout;
+  footer.appendChild(lockBtn);
+  updateGithubBtnState();
 });
 
 // ── IMAGE PROXY ───────────────────────────────────────────────────────────────
 function proxyImg(url) {
-  if (!url) return url;
-  if (url.includes('wsrv.nl')) return url;
-  const clean = url.replace(/^https?:\/\//, '');
-  return 'https://wsrv.nl/?url=' + encodeURIComponent(clean) + '&w=400&output=jpg';
+  if (!url || url.includes('wsrv.nl')) return url;
+  return 'https://wsrv.nl/?url=' + encodeURIComponent(url.replace(/^https?:\/\//, '')) + '&w=400&output=jpg';
 }
 
-// ── DATA — loaded from data.js global, kept in memory only ───────────────────
-let db = (typeof MYFLIX_DATA !== 'undefined') ? JSON.parse(JSON.stringify(MYFLIX_DATA)) : {trending:[],action:[],comedy:[]};
+// ── DATA ──────────────────────────────────────────────────────────────────────
+function loadDB() {
+  try {
+    const saved = localStorage.getItem(DB_KEY);
+    if (saved) {
+      const p = JSON.parse(saved);
+      if (p && p.trending && p.action && p.comedy) return p;
+    }
+  } catch(e) {}
+  if (typeof MYFLIX_DATA !== 'undefined') return JSON.parse(JSON.stringify(MYFLIX_DATA));
+  return { trending:[], action:[], comedy:[] };
+}
+function saveDB() {
+  try { localStorage.setItem(DB_KEY, JSON.stringify(db)); return true; }
+  catch(e) { showToast('Save failed: ' + e.message, 'error'); return false; }
+}
+
+let db = loadDB();
 let nextId = computeNextId();
 let editingId  = null;
 let deletingId = null;
-let hasUnsaved = false;
 
 function computeNextId() {
   const all = [...db.trending, ...db.action, ...db.comedy];
@@ -115,40 +124,163 @@ function findMovie(id) {
 }
 function deleteFromDB(id) {
   const nid = Number(id);
-  for (const row of ['trending','action','comedy']) {
-    db[row] = db[row].filter(m => Number(m.id) !== nid);
+  for (const row of ['trending','action','comedy']) db[row] = db[row].filter(m => Number(m.id) !== nid);
+}
+
+// ── GITHUB AUTO-PUSH ──────────────────────────────────────────────────────────
+function getGHSettings() {
+  try { return JSON.parse(localStorage.getItem(GH_KEY) || 'null'); } catch { return null; }
+}
+function saveGithubSettings() {
+  const user   = document.getElementById('ghUser').value.trim();
+  const repo   = document.getElementById('ghRepo').value.trim();
+  const branch = document.getElementById('ghBranch').value.trim() || 'main';
+  const token  = document.getElementById('ghToken').value.trim();
+  if (!user || !repo || !token) { showGHResult('Please fill in all fields.', false); return; }
+  localStorage.setItem(GH_KEY, JSON.stringify({ user, repo, branch, token }));
+  updateGithubBtnState();
+  closeGithubSettings();
+  showToast('GitHub connected! Changes will auto-push.', 'success');
+}
+window.saveGithubSettings = saveGithubSettings;
+
+function loadGithubSettingsForm() {
+  const s = getGHSettings();
+  if (!s) return;
+  document.getElementById('ghUser').value   = s.user   || '';
+  document.getElementById('ghRepo').value   = s.repo   || '';
+  document.getElementById('ghBranch').value = s.branch || 'main';
+  document.getElementById('ghToken').value  = s.token  || '';
+}
+function openGithubSettings()  {
+  loadGithubSettingsForm();
+  document.getElementById('ghTestResult').textContent = '';
+  document.getElementById('githubOverlay').classList.add('open');
+}
+function closeGithubSettings() { document.getElementById('githubOverlay').classList.remove('open'); }
+window.openGithubSettings  = openGithubSettings;
+window.closeGithubSettings = closeGithubSettings;
+document.getElementById('githubOverlay').addEventListener('click', function(e) { if (e.target===this) closeGithubSettings(); });
+
+function updateGithubBtnState() {
+  const btn = document.querySelector('.github-btn');
+  if (!btn) return;
+  const s = getGHSettings();
+  if (s && s.token) {
+    btn.classList.add('connected');
+    btn.innerHTML = '&#10003; GitHub';
+    btn.title = 'Connected to ' + s.user + '/' + s.repo + ' — click to change';
+  } else {
+    btn.classList.remove('connected');
+    btn.innerHTML = '&#9881; GitHub';
+    btn.title = 'Click to connect GitHub for auto-push';
   }
 }
 
-// ── EXPORT data.js ────────────────────────────────────────────────────────────
-function exportDataJS() {
+async function testGithubConnection() {
+  const user   = document.getElementById('ghUser').value.trim();
+  const repo   = document.getElementById('ghRepo').value.trim();
+  const token  = document.getElementById('ghToken').value.trim();
+  if (!user || !repo || !token) { showGHResult('Fill in all fields first.', false); return; }
+  showGHResult('⏳ Testing...', null);
+  try {
+    const res = await fetch('https://api.github.com/repos/' + user + '/' + repo, {
+      headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/vnd.github.v3+json' }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      showGHResult('✅ Connected! Repo: ' + data.full_name, true);
+    } else if (res.status === 401) {
+      showGHResult('❌ Invalid token. Check your PAT.', false);
+    } else if (res.status === 404) {
+      showGHResult('❌ Repo not found. Check username/repo name.', false);
+    } else {
+      showGHResult('❌ Error ' + res.status + '. Check settings.', false);
+    }
+  } catch(e) {
+    showGHResult('❌ Network error: ' + e.message, false);
+  }
+}
+window.testGithubConnection = testGithubConnection;
+
+function showGHResult(msg, ok) {
+  const el = document.getElementById('ghTestResult');
+  el.textContent = msg;
+  el.style.color = ok === true ? '#22c55e' : ok === false ? '#ff4d57' : '#888';
+}
+
+// Build the data.js file content
+function buildDataJS() {
   const now = new Date().toISOString().slice(0,19).replace('T',' ');
-  const content = '// MyFlix Movie Database - Generated ' + now + '\n// Upload this file to GitHub to publish changes\n\nconst MYFLIX_DATA = ' + JSON.stringify(db, null, 2) + ';\n';
-  const blob = new Blob([content], {type:'text/javascript'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'data.js';
-  a.click();
-  URL.revokeObjectURL(a.href);
-  hasUnsaved = false;
-  updateBanner(false);
-  showToast('data.js downloaded! Upload it to your GitHub repo.', 'success');
+  return '// MyFlix Movie Database\n// Auto-updated: ' + now + '\n\nconst MYFLIX_DATA = ' + JSON.stringify(db, null, 2) + ';\n';
 }
-window.exportDataJS = exportDataJS;
 
-// ── UNSAVED CHANGES BANNER ────────────────────────────────────────────────────
-function updateBanner(show) {
-  let b = document.getElementById('dlBanner');
-  if (!b) {
-    b = document.createElement('div');
-    b.id = 'dlBanner';
-    b.style.cssText = 'position:fixed;bottom:0;left:220px;right:0;z-index:400;background:#1a0a00;border-top:2px solid #e50914;padding:14px 28px;display:flex;align-items:center;gap:16px;font-size:0.85rem;color:#f0f0f0;transition:transform 0.3s ease;transform:translateY(100%)';
-    b.innerHTML = '<span style="flex:1"><strong>Unsaved changes.</strong> Download data.js and upload to GitHub to publish.</span>' +
-      '<button onclick="exportDataJS()" style="background:#e50914;color:#fff;border:none;padding:9px 20px;border-radius:4px;font-weight:600;cursor:pointer;">Download data.js</button>' +
-      '<button onclick="document.getElementById(\'dlBanner\').style.transform=\'translateY(100%)\'" style="background:transparent;border:1px solid #444;color:#aaa;padding:9px 14px;border-radius:4px;cursor:pointer;margin-left:8px;">Dismiss</button>';
-    document.body.appendChild(b);
+// Push data.js to GitHub via API
+async function pushToGitHub() {
+  const s = getGHSettings();
+  if (!s || !s.token) return; // No GitHub connected, skip silently
+
+  setPushStatus('pushing', '⏳ Pushing to GitHub...');
+
+  const content = buildDataJS();
+  const encoded = btoa(unescape(encodeURIComponent(content))); // base64 encode (handles UTF-8)
+  const apiUrl  = 'https://api.github.com/repos/' + s.user + '/' + s.repo + '/contents/data.js';
+  const headers = {
+    'Authorization': 'Bearer ' + s.token,
+    'Accept': 'application/vnd.github.v3+json',
+    'Content-Type': 'application/json'
+  };
+
+  try {
+    // Step 1: Get current file SHA (required for update)
+    let sha = null;
+    const getRes = await fetch(apiUrl + '?ref=' + s.branch, { headers });
+    if (getRes.ok) {
+      const fileData = await getRes.json();
+      sha = fileData.sha;
+    } else if (getRes.status !== 404) {
+      throw new Error('Failed to fetch file: ' + getRes.status);
+    }
+
+    // Step 2: Create or update the file
+    const body = {
+      message: 'Update data.js via Admin Panel',
+      content: encoded,
+      branch: s.branch
+    };
+    if (sha) body.sha = sha; // Required for update, omit for create
+
+    const putRes = await fetch(apiUrl, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(body)
+    });
+
+    if (putRes.ok) {
+      setPushStatus('success', '✅ Pushed to GitHub!');
+      setTimeout(() => setPushStatus('', ''), 4000);
+    } else {
+      const err = await putRes.json();
+      throw new Error(err.message || putRes.status);
+    }
+  } catch(e) {
+    setPushStatus('error', '❌ Push failed: ' + e.message);
+    setTimeout(() => setPushStatus('', ''), 6000);
+    console.error('GitHub push error:', e);
   }
-  requestAnimationFrame(() => { b.style.transform = show ? 'translateY(0)' : 'translateY(100%)'; });
+}
+
+function setPushStatus(state, msg) {
+  const el = document.getElementById('pushStatus');
+  if (!el) return;
+  el.className = 'push-status' + (state ? ' ' + state : '');
+  el.textContent = msg;
+}
+
+// Combined save: localStorage + GitHub push
+function saveAndPush() {
+  saveDB();
+  pushToGitHub(); // fire and forget — doesn't block UI
 }
 
 // ── RENDER ────────────────────────────────────────────────────────────────────
@@ -170,25 +302,25 @@ function renderTable(tbodyId, movies, showRow) {
   const tbody = document.getElementById(tbodyId);
   if (!tbody) return;
   if (!movies.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="7">No movies found.</td></tr>'; return; }
-  tbody.innerHTML = movies.map(m => '<tr>' +
-    '<td><img class="poster-thumb" src="' + proxyImg(m.img) + '" alt="' + m.title + '" onerror="this.src=\'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2258%22><rect width=%2240%22 height=%2258%22 fill=%22%231a1a1a%22/></svg>\'"></td>' +
+  tbody.innerHTML = movies.map(m =>
+    '<tr>' +
+    '<td><img class="poster-thumb" src="' + proxyImg(m.img) + '" alt="' + m.title + '" onerror="this.style.background=\'#1a1a1a\'"></td>' +
     '<td class="movie-title-cell">' + m.title + '<small>' + (m.desc ? m.desc.substring(0,60)+'...' : '') + '</small></td>' +
     '<td>' + m.year + '</td><td>' + m.genre + '</td>' +
     (showRow ? '<td><span class="row-badge ' + m.row + '">' + m.row + '</span></td>' : '') +
-    '<td><a class="yt-link" href="https://youtube.com/watch?v=' + m.trailer + '" target="_blank">Play ' + m.trailer + '</a></td>' +
+    '<td><a class="yt-link" href="https://youtube.com/watch?v=' + m.trailer + '" target="_blank">&#9654; ' + m.trailer + '</a></td>' +
     '<td><div class="action-btns">' +
-    '<button class="btn-edit" onclick="startEdit(' + m.id + ')">Edit</button>' +
-    '<button class="btn-delete" onclick="startDelete(' + m.id + ')">Delete</button>' +
+    '<button class="btn-edit" onclick="startEdit(' + m.id + ')">&#9998; Edit</button>' +
+    '<button class="btn-delete" onclick="startDelete(' + m.id + ')">&#128465; Delete</button>' +
     '</div></td></tr>'
   ).join('');
 }
 
 // ── NAVIGATION ────────────────────────────────────────────────────────────────
-const pageTitles = {dashboard:'Dashboard',movies:'All Movies',trending:'Trending',action:'Action',comedy:'Comedy'};
+const pageTitles = {dashboard:'Dashboard',movies:'All Movies',trending:'🔥 Trending',action:'⚡ Action',comedy:'😄 Comedy'};
 document.querySelectorAll('.nav-item').forEach(item => {
   item.addEventListener('click', e => {
-    e.preventDefault();
-    switchPage(item.dataset.page);
+    e.preventDefault(); switchPage(item.dataset.page);
     document.getElementById('sidebar').classList.remove('open');
   });
 });
@@ -198,9 +330,7 @@ function switchPage(page) {
   document.getElementById('topbarTitle').textContent = pageTitles[page] || page;
   renderAll();
 }
-document.getElementById('sidebarToggle').addEventListener('click', () => {
-  document.getElementById('sidebar').classList.toggle('open');
-});
+document.getElementById('sidebarToggle').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('open'));
 
 // ── SEARCH ────────────────────────────────────────────────────────────────────
 document.getElementById('searchInput').addEventListener('input', function() {
@@ -212,9 +342,8 @@ document.getElementById('searchInput').addEventListener('input', function() {
 
 // ── MODAL ─────────────────────────────────────────────────────────────────────
 function openModal(id) {
-  editingId = id != null ? Number(id) : null;
-  document.getElementById('movieForm').reset();
-  hideImgPreview();
+  editingId = (id != null) ? Number(id) : null;
+  document.getElementById('movieForm').reset(); hideImgPreview();
   if (editingId !== null) {
     const m = findMovie(editingId);
     if (!m) { showToast('Movie not found.', 'error'); return; }
@@ -228,8 +357,7 @@ function openModal(id) {
     document.getElementById('fDesc').value    = m.desc || '';
     document.getElementById('fImg').value     = m.img;
     document.getElementById('fTrailer').value = m.trailer;
-    showImgPreview(m.img);
-    updateYtLink(m.trailer);
+    showImgPreview(m.img); updateYtLink(m.trailer);
   } else {
     document.getElementById('modalTitle').textContent    = 'Add Movie';
     document.getElementById('formSubmitBtn').textContent = 'Add Movie';
@@ -243,21 +371,18 @@ window.closeModal = closeModal;
 document.getElementById('fImg').addEventListener('input', function() { showImgPreview(this.value.trim()); });
 function showImgPreview(url) {
   const img = document.getElementById('imgPreview'), hint = document.querySelector('.img-hint');
-  if (url) { img.src = proxyImg(url); img.classList.remove('hidden'); hint.style.display = 'none'; }
-  else hideImgPreview();
+  if (url) { img.src = proxyImg(url); img.classList.remove('hidden'); hint.style.display='none'; } else hideImgPreview();
 }
 function hideImgPreview() {
   const img = document.getElementById('imgPreview');
-  img.classList.add('hidden'); img.src = '';
-  document.querySelector('.img-hint').style.display = '';
+  img.classList.add('hidden'); img.src=''; document.querySelector('.img-hint').style.display='';
 }
 document.getElementById('fTrailer').addEventListener('input', function() { updateYtLink(this.value.trim()); });
 function updateYtLink(id) {
-  const link = document.getElementById('ytPreviewLink');
-  link.href = id ? 'https://www.youtube.com/watch?v=' + id : '#';
-  link.style.opacity = id ? '1' : '0.4';
+  const l = document.getElementById('ytPreviewLink');
+  l.href = id ? 'https://www.youtube.com/watch?v='+id : '#'; l.style.opacity = id?'1':'0.4';
 }
-document.getElementById('modalOverlay').addEventListener('click', function(e) { if (e.target===this) closeModal(); });
+document.getElementById('modalOverlay').addEventListener('click', function(e) { if(e.target===this) closeModal(); });
 
 document.getElementById('movieForm').addEventListener('submit', function(e) {
   e.preventDefault();
@@ -268,22 +393,20 @@ document.getElementById('movieForm').addEventListener('submit', function(e) {
   const desc    = document.getElementById('fDesc').value.trim();
   const img     = document.getElementById('fImg').value.trim();
   const trailer = document.getElementById('fTrailer').value.trim();
-  if (!title || !year || !genre || !row || !img || !trailer) { showToast('Fill in all required fields.', 'error'); return; }
+  if (!title||!year||!genre||!row||!img||!trailer) { showToast('Fill in all required fields.','error'); return; }
+
   if (editingId !== null) {
     for (const r of ['trending','action','comedy']) {
-      const idx = db[r].findIndex(m => Number(m.id) === editingId);
-      if (idx !== -1) { db[r].splice(idx, 1); break; }
+      const idx = db[r].findIndex(m => Number(m.id)===editingId);
+      if (idx!==-1) { db[r].splice(idx,1); break; }
     }
-    db[row].push({id:editingId, title, year, genre, desc, img, trailer});
-    showToast('"' + title + '" updated! Download data.js to publish.', 'success');
+    db[row].push({id:editingId,title,year,genre,desc,img,trailer});
+    showToast('"'+title+'" updated!','success');
   } else {
-    db[row].push({id:nextId++, title, year, genre, desc, img, trailer});
-    showToast('"' + title + '" added! Download data.js to publish.', 'success');
+    db[row].push({id:nextId++,title,year,genre,desc,img,trailer});
+    showToast('"'+title+'" added to '+row+'!','success');
   }
-  hasUnsaved = true;
-  updateBanner(true);
-  closeModal();
-  renderAll();
+  saveAndPush(); closeModal(); renderAll();
 });
 
 // ── EDIT / DELETE ─────────────────────────────────────────────────────────────
@@ -295,28 +418,29 @@ function startDelete(id) {
   document.getElementById('deleteName').textContent = m ? m.title : 'this movie';
   document.getElementById('deleteOverlay').classList.add('open');
 }
-function closeDelete() { deletingId = null; document.getElementById('deleteOverlay').classList.remove('open'); }
-window.startDelete = startDelete;
-window.closeDelete = closeDelete;
+function closeDelete() { deletingId=null; document.getElementById('deleteOverlay').classList.remove('open'); }
+window.startDelete = startDelete; window.closeDelete = closeDelete;
+
 document.getElementById('confirmDeleteBtn').addEventListener('click', () => {
-  if (deletingId === null) return;
+  if (deletingId===null) return;
   const m = findMovie(deletingId);
-  deleteFromDB(deletingId);
-  hasUnsaved = true; updateBanner(true);
-  showToast('"' + (m ? m.title : 'Movie') + '" deleted! Download data.js to publish.', 'success');
+  deleteFromDB(deletingId); saveAndPush();
+  showToast('"'+(m?m.title:'Movie')+'" deleted.','success');
   closeDelete(); renderAll();
 });
-document.getElementById('deleteOverlay').addEventListener('click', function(e) { if (e.target===this) closeDelete(); });
+document.getElementById('deleteOverlay').addEventListener('click', function(e) { if(e.target===this) closeDelete(); });
 
 // ── TOAST ─────────────────────────────────────────────────────────────────────
 let toastTimer;
 function showToast(msg, type) {
   const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'toast show ' + (type||'success');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { t.className = 'toast'; }, 4000);
+  t.textContent = msg; t.className='toast show '+(type||'success');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>{t.className='toast';},4000);
 }
 
 // ── BOOT ──────────────────────────────────────────────────────────────────────
 renderAll();
+ADMINEOF
+Output
+
+exit code 0
