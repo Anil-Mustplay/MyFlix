@@ -1,6 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MyFlix</title>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -14,7 +16,7 @@
   <div class="banner-content">
     <h1 id="title"></h1>
     <p id="desc"></p>
-    <button onclick="playBanner()">▶ Play</button>
+    <button onclick="playBanner()">&#9654; Play</button>
   </div>
 </div>
 <!-- 🎥 PLAYER -->
@@ -26,6 +28,9 @@
 <div id="action" class="row"></div>
 <h2>Comedy</h2>
 <div id="comedy" class="row"></div>
+
+<!-- data.js MUST load before script.js -->
+<script src="data.js"></script>
 <script src="script.js"></script>
 </body>
 </html>
